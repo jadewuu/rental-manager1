@@ -1,0 +1,124 @@
+/* ============================================================
+   出租屋管理系统 - 自定义样式
+   ============================================================ */
+
+/* Safe area for iOS notch */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ============================================================
+   Vue Transitions
+   ============================================================ */
+
+/* Page transition */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* Modal transition */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-enter-active .relative,
+.modal-leave-active .relative {
+  transition: transform 0.2s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .relative,
+.modal-leave-to .relative {
+  transform: scale(0.95);
+}
+
+/* Toast transition */
+.toast-enter-active {
+  transition: all 0.3s ease;
+}
+
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* ============================================================
+   通用样式
+   ============================================================ */
+
+/* 防止 iOS 输入缩放 */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+/* 选中高亮 */
+::selection {
+  background: #6366f1;
+  color: white;
+}
+
+/* 移动端点击反馈 */
+@media (hover: hover) {
+  .tap-highlight {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* 数字输入去掉箭头 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Detail summary 箭头 */
+details > summary {
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
