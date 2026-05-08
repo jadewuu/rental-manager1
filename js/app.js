@@ -1219,6 +1219,148 @@ const BillsView = {
       deleteTarget.value = null;
     }
 
+    // 生成账单图片并保存
+    async function saveBillImage(bill) {
+      if (!window.html2canvas) {
+        showToast('图片生成库加载中，请刷新后重试', 'error');
+        return;
+      }
+
+      const roomName = getRoomName(bill.roomId);
+      const tenantName = getTenantName(bill.tenantId);
+      const period = utils.getMonthLabel(bill.period);
+      const statusText = bill.status === 'paid' ? '已缴' : '未缴';
+      const today = utils.getToday();
+
+      // 构建收据 HTML
+      const receipt = document.createElement('div');
+      receipt.innerHTML = `
+        <div style="width:390px;padding:32px 28px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue','PingFang SC','Microsoft YaHei',sans-serif;box-sizing:border-box;">
+          <!-- 顶部装饰线 -->
+          <div style="height:4px;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:2px;margin-bottom:24px;"></div>
+
+          <!-- 标题 -->
+          <div style="text-align:center;margin-bottom:20px;">
+            <div style="font-size:22px;font-weight:700;color:#1e293b;letter-spacing:1px;">房 租 账 单</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:4px;">RENTAL INVOICE · 编号 ${bill.id.slice(-8).toUpperCase()}</div>
+          </div>
+
+          <!-- 虚线分割 -->
+          <div style="border-bottom:2px dashed #e2e8f0;margin-bottom:20px;"></div>
+
+          <!-- 基本信息 -->
+          <table style="width:100%;font-size:13px;color:#475569;line-height:2;margin-bottom:20px;">
+            <tr>
+              <td style="color:#94a3b8;width:70px;">房间</td>
+              <td style="font-weight:600;color:#1e293b;">${roomName}</td>
+              <td style="color:#94a3b8;width:70px;">租客</td>
+              <td style="font-weight:600;color:#1e293b;">${tenantName}</td>
+            </tr>
+            <tr>
+              <td style="color:#94a3b8;">账期</td>
+              <td style="font-weight:600;color:#1e293b;">${period}</td>
+              <td style="color:#94a3b8;">状态</td>
+              <td style="font-weight:600;color:${bill.status === 'paid' ? '#10b981' : '#f59e0b'};">${statusText}</td>
+            </tr>
+          </table>
+
+          <!-- 费用明细标题 -->
+          <div style="background:#f8fafc;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px;">
+            费 用 明 细
+          </div>
+
+          <!-- 明细行 -->
+          <table style="width:100%;font-size:14px;line-height:2.2;border-collapse:collapse;">
+            <tr>
+              <td style="color:#64748b;padding:4px 0;">租金</td>
+              <td style="text-align:right;font-weight:500;color:#1e293b;padding:4px 0;">¥${utils.formatMoney(bill.rentAmount)}</td>
+            </tr>
+            <tr>
+              <td style="color:#64748b;padding:4px 0;">水费 <span style="font-size:12px;color:#94a3b8;">${bill.waterUsage}吨 × ¥${bill.waterRate}</span></td>
+              <td style="text-align:right;font-weight:500;color:#1e293b;padding:4px 0;">¥${utils.formatMoney(bill.waterCost)}</td>
+            </tr>
+            <tr>
+              <td style="color:#64748b;padding:4px 0;">电费 <span style="font-size:12px;color:#94a3b8;">${bill.electricUsage}度 × ¥${bill.electricRate}</span></td>
+              <td style="text-align:right;font-weight:500;color:#1e293b;padding:4px 0;">¥${utils.formatMoney(bill.electricCost)}</td>
+            </tr>
+            ${bill.otherFees > 0 ? `
+            <tr>
+              <td style="color:#64748b;padding:4px 0;">其他费用</td>
+              <td style="text-align:right;font-weight:500;color:#1e293b;padding:4px 0;">¥${utils.formatMoney(bill.otherFees)}</td>
+            </tr>` : ''}
+          </table>
+
+          <!-- 合计 -->
+          <div style="border-top:2px solid #e2e8f0;margin-top:12px;padding-top:14px;text-align:center;">
+            <div style="font-size:11px;color:#94a3b8;">合计金额 (Total)</div>
+            <div style="font-size:32px;font-weight:800;color:#1e293b;letter-spacing:1px;margin-top:2px;">
+              ¥${utils.formatMoney(bill.totalAmount)}
+            </div>
+          </div>
+
+          <!-- 表底读数 -->
+          <div style="border-top:1px solid #e2e8f0;margin-top:16px;padding-top:14px;">
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;">表底读数参考</div>
+            <table style="width:100%;font-size:12px;color:#64748b;">
+              <tr>
+                <td>水表: ${bill.waterCurrReading} 吨</td>
+                <td style="text-align:right;">上次: ${bill.waterPrevReading} 吨</td>
+              </tr>
+              <tr>
+                <td>电表: ${bill.electricCurrReading} 度</td>
+                <td style="text-align:right;">上次: ${bill.electricPrevReading} 度</td>
+              </tr>
+            </table>
+          </div>
+
+          ${bill.notes ? `
+          <div style="border-top:1px solid #e2e8f0;margin-top:14px;padding-top:12px;font-size:11px;color:#94a3b8;">
+            备注: ${bill.notes}
+          </div>` : ''}
+
+          <!-- 底部 -->
+          <div style="border-top:2px dashed #e2e8f0;margin-top:20px;padding-top:16px;text-align:center;">
+            <div style="font-size:10px;color:#cbd5e1;">
+              由「出租屋管理系统」生成 · ${today}
+            </div>
+            <div style="font-size:10px;color:#cbd5e1;margin-top:2px;">
+              此账单为系统生成，如有疑问请联系房东
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(receipt);
+
+      try {
+        showToast('正在生成图片...');
+        await new Promise(r => setTimeout(r, 200));
+
+        const canvas = await window.html2canvas(receipt.firstElementChild, {
+          scale: 3,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false,
+          width: 390,
+          windowWidth: 390
+        });
+
+        // 下载图片
+        const link = document.createElement('a');
+        link.download = `账单_${roomName}_${bill.period}.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showToast('账单图片已保存到设备');
+      } catch (e) {
+        console.error('生成图片失败:', e);
+        showToast('生成图片失败，请重试', 'error');
+      } finally {
+        document.body.removeChild(receipt);
+      }
+    }
+
     const totalPendingAmount = computed(() =>
       filteredBills.value
         .filter(b => b.status === 'pending')
@@ -1228,7 +1370,7 @@ const BillsView = {
     return { rooms, filteredBills, settings, showForm, showDetail, detailBill, deleteTarget,
       filterStatus, filterMonth, form, formPrevReading,
       monthOptions, getRoomName, getTenantName, currentTenants, selectedTenant,
-      openGenerate, onRoomSelected, generateBill, viewDetail, markPaid,
+      openGenerate, onRoomSelected, generateBill, viewDetail, markPaid, saveBillImage,
       confirmDelete, doDelete, totalPendingAmount, navigate, utils, showToast };
   },
   template: `
@@ -1520,6 +1662,13 @@ const BillsView = {
             <button v-if="detailBill.status === 'pending'" @click="markPaid(detailBill)"
                     class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 rounded-xl transition-colors">
               标记已缴
+            </button>
+            <button @click="saveBillImage(detailBill)"
+                    class="flex-1 px-4 py-2.5 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors flex items-center justify-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              保存图片
             </button>
             <button @click="showDetail = false"
                     class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
