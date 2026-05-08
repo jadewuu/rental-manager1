@@ -253,7 +253,7 @@ const DashboardView = {
       return all.slice(0, 5);
     });
 
-    return { stats, tenants, rooms, bills, recentBills, navigate, utils };
+    return { stats, tenants, rooms, bills, recentBills, navigate, utils, Store };
   },
   template: `
     <div class="space-y-6">
